@@ -7,13 +7,17 @@ terraform{
 }
 
 provider "azurerm" {
-  features {} # This block is required, even if empty
+ features {
+    resource_group {
+      # This is the magic line
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 resource "azurerm_resource_group" "new_resource"{
-name ="terraform_rg"
-location="East US"
-
+name ="terraform_rg_v2"
+location = "ukwest"   
 }
 
 # 3. Create Network Security Group (NSG) with Rules
@@ -109,13 +113,14 @@ resource "tls_private_key" "ssh_key" {
 }
 
 #10 create a linux virtual machine
-resource "azurerm_linux_virtual_machine" "vm"{
+resource "azurerm_linux_virtual_machine" "vm" {
     name = "terraform_vm"
     resource_group_name = azurerm_resource_group.new_resource.name
     location = azurerm_resource_group.new_resource.location
     size = "Standard_B1s"
     admin_username = "azure_user"
     network_interface_ids = [azurerm_network_interface.nic.id]
+    computer_name = "terraformvm"
 
     #cloud init to install apache server
     admin_ssh_key{
