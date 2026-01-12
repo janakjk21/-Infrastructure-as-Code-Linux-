@@ -16,7 +16,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "new_resource"{
-name ="terraform_rg_v2"
+name ="terraform_rg_v3"
 location = "ukwest"   
 }
 
@@ -117,7 +117,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     name = "terraform_vm"
     resource_group_name = azurerm_resource_group.new_resource.name
     location = azurerm_resource_group.new_resource.location
-    size = "Standard_B1s"
+    size = "Standard_D2s_v3"
     admin_username = "azure_user"
     network_interface_ids = [azurerm_network_interface.nic.id]
     computer_name = "terraformvm"
@@ -131,12 +131,30 @@ resource "azurerm_linux_virtual_machine" "vm" {
         caching = "ReadWrite"
         storage_account_type = "Standard_LRS"
     }
-    source_image_reference{
-        publisher = "Canonical"
-        offer = "UbuntuServer"
-        sku = "18.04-LTS"
-        version = "latest"
-    }
+    
+    source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+custom_data = base64encode(<<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y nginx
+              
+              # Get current timestamp
+              TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+              
+              # Create the custom HTML file
+              echo "<h1>Deployed via Terraform by Janak at $TIMESTAMP</h1>" > /var/www/html/index.html
+              
+              # Ensure Nginx is started and enabled
+              systemctl start nginx
+              systemctl enable nginx
+              EOF
+  )
+  
 }
 
 # output the public ip address of the vm
